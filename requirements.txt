@@ -1,0 +1,7 @@
+flake8
+mlflow
+torch
+torchvision
+matplotlib
+opencv-python
+ipykernel
