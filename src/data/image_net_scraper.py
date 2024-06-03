@@ -10,11 +10,12 @@ from ..utils import Singleton
 
 
 class ImageNetScraper(metaclass=Singleton):
-    def __init__(self, class_list, images_per_class, data_root, multiprocessing_workers):
+    def __init__(self, class_list, images_per_class, data_root, multiprocessing_workers, logger):
         self.images_per_class = images_per_class
         self.data_root = data_root
         self.class_list = class_list
         self.multiprocessing_workers = multiprocessing_workers if multiprocessing_workers else cpu_count()
+        self.logger = logger
 
         self.file_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -34,32 +35,37 @@ class ImageNetScraper(metaclass=Singleton):
         self.imagenet_images_folder = os.path.join(self.file_path, self.data_root)
         if not os.path.isdir(self.imagenet_images_folder):
             os.mkdir(self.imagenet_images_folder)
+            self.logger.info(f"Created directory at {self.imagenet_images_folder}")
 
     def get_image(self, img_url, class_name, class_images_counter):
         response = requests.get(img_url, timeout=1)
         if 'image' not in response.headers.get('content-type', ''):
+            self.logger.error("Not an image")
             raise ValueError("Not an image")
         img_content = response.content
         if len(img_content) < 1000:
+            self.logger.error("Image too small")
             raise ValueError("Image too small")
         img_file_path = os.path.join(self.imagenet_images_folder, f'{class_name}_{class_images_counter}.png')
         with open(img_file_path, 'wb') as img_f:
             img_f.write(img_content)
+        self.logger.info(f"Saved image {img_file_path}")
 
     def download_images(self, urls, class_name):
         class_images_counter = 0
 
         for url in urls:
             if class_images_counter >= self.images_per_class:
-                print(f"Reached the limit of {self.images_per_class} images for class {class_name}.")
+                self.logger.info(f"Reached the limit of {self.images_per_class} images for class {class_name}.")
                 break
             try:
                 class_images_counter += 1
                 self.get_image(url, class_name, class_images_counter)
-            except (ConnectionError, ReadTimeout, TooManyRedirects, MissingSchema, InvalidURL, ValueError):
+            except (ConnectionError, ReadTimeout, TooManyRedirects, MissingSchema, InvalidURL, ValueError) as e:
+                self.logger.error(f"Failed to download image: {e}")
                 class_images_counter -= 1
 
-        print(f"Downloaded images for class {class_name}.")
+        self.logger.info(f"Downloaded images for class {class_name}.")
 
     def fetch_image_urls(self, wnid):
         url = f'http://www.image-net.org/api/imagenet.synset.geturls?wnid={wnid}'
@@ -69,7 +75,7 @@ class ImageNetScraper(metaclass=Singleton):
     def scrape_class(self, class_wnid):
         class_name = self.class_info_dict[class_wnid]["class_name"]
         img_urls = self.fetch_image_urls(class_wnid)
-        print(f'Pobieranie obrazów dla klasy \"{class_name}\" z limitem do {self.images_per_class} obrazów.')
+        self.logger.info(f'Starting download for class "{class_name}" with a limit of {self.images_per_class} images.')
         self.download_images(img_urls, class_name)
 
     def run(self):

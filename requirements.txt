@@ -1,7 +1,9 @@
-flake8
-mlflow
 torch
 torchvision
 matplotlib
 opencv-python
+requests
+pandas
 ipykernel
+flake8
+mlflow
