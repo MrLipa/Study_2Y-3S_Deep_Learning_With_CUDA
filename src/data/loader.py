@@ -1,13 +1,16 @@
+# src/data/loader.py
+
 import torch
 import os
 from torchvision import transforms
 import shutil
 import cv2
 from .image_net_scraper import ImageNetScraper
+from ..utils import Singleton
 
 
-class Loader:
-    def __init__(self, input_filepath='../../data/raw', output_filepath='../../data/processed', split_proportions=(0.7, 0.2, 0.1), image_size=(256, 256)):
+class Loader(metaclass=Singleton):
+    def __init__(self, input_filepath, output_filepath, split_proportions, image_size):
         self.file_path = os.path.dirname(os.path.realpath(__file__))
 
         self.input_filepath = os.path.join(self.file_path, input_filepath)
@@ -26,6 +29,7 @@ class Loader:
         self.train_path = os.path.join(self.input_filepath, 'train')
         self.valid_path = os.path.join(self.input_filepath, 'valid')
         self.test_path = os.path.join(self.input_filepath, 'test')
+
         self.processed_train_path = os.path.join(self.output_filepath, 'train')
         self.processed_valid_path = os.path.join(self.output_filepath, 'valid')
         self.processed_test_path = os.path.join(self.output_filepath, 'test')
@@ -33,6 +37,7 @@ class Loader:
         os.makedirs(self.train_path, exist_ok=True)
         os.makedirs(self.valid_path, exist_ok=True)
         os.makedirs(self.test_path, exist_ok=True)
+
         os.makedirs(self.processed_train_path, exist_ok=True)
         os.makedirs(self.processed_valid_path, exist_ok=True)
         os.makedirs(self.processed_test_path, exist_ok=True)
@@ -68,6 +73,8 @@ class Loader:
                 file_path = os.path.join(input_dir, file)
                 image = cv2.imread(file_path)
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+
+                image = cv2.resize(image, self.image_size)
 
                 output_path = os.path.join(output_dir, file)
                 cv2.imwrite(output_path, image)

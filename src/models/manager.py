@@ -2,13 +2,12 @@
 
 import mlflow
 import os
-import torch
 import torch.nn as nn
 from ..data import Loader
-from ..utils.logger import Logger
+from ..utils import Logger, Singleton
 
 
-class Manager:
+class Manager(metaclass=Singleton):
     def __init__(self, model: nn.Module, data_loader: Loader, logger: Logger = None,
                  mlflow_enabled: bool = False, mlflow_path: str = './../mlruns',
                  experiment_name: str = 'Image Colorizator') -> None:
@@ -31,20 +30,20 @@ class Manager:
 
         self.logger.info(f"MLflow configured with tracking URI: {self.mlflow_path} and experiment name: {self.experiment_name}")
 
-    def train_model(self, criterion, optimizer, epochs: int):
+    def train_model(self):
         pass
 
-    def _train_model(self, criterion, optimizer, epochs: int):
+    def _train_model(self):
         pass
 
-    def save_model(self, models_folder_path: str):
+    def save_model(self):
         pass
 
-    def load_model(self, model_path: str = "", if_latest: bool = False):
+    def load_model(self):
         pass
 
-    def delete_model_folder(self, models_folder_path: str):
+    def delete_model_folder(self):
         pass
 
-    def predict_model(self, images_tensor: torch.Tensor):
+    def predict_model(self):
         pass

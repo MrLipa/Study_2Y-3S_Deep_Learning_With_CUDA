@@ -1,8 +1,11 @@
+# src/utils/logger.py
+
 import logging
 import os
+from .singleton import Singleton
 
 
-class Logger:
+class Logger(metaclass=Singleton):
     def __init__(self, name, level=logging.INFO, log_directory='logs'):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)

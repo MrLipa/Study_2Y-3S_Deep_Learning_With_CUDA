@@ -1,3 +1,5 @@
+# src/utils/singleton.py
+
 class Singleton(type):
     _instances = {}
 

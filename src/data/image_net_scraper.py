@@ -1,13 +1,16 @@
+# src/data/image_net_scraper.py
+
 import os
 import requests
 import json
 from multiprocessing import Pool, cpu_count
 from requests.exceptions import ConnectionError, ReadTimeout, TooManyRedirects, MissingSchema, InvalidURL
 import pandas as pd
+from ..utils import Singleton
 
 
-class ImageNetScraper:
-    def __init__(self, class_list=None, images_per_class=2, data_root='../../data/raw', multiprocessing_workers=2):
+class ImageNetScraper(metaclass=Singleton):
+    def __init__(self, class_list, images_per_class, data_root, multiprocessing_workers):
         self.images_per_class = images_per_class
         self.data_root = data_root
         self.class_list = class_list
