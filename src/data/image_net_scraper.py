@@ -11,28 +11,28 @@ from ..utils import Singleton
 
 class ImageNetScraper(metaclass=Singleton):
     def __init__(self, class_list, images_per_class, data_root, multiprocessing_workers, logger):
+        self.project_path = os.environ.get('PROJECT_PATH')
+
         self.images_per_class = images_per_class
         self.data_root = data_root
         self.class_list = class_list
         self.multiprocessing_workers = multiprocessing_workers if multiprocessing_workers else cpu_count()
         self.logger = logger
 
-        self.file_path = os.path.dirname(os.path.realpath(__file__))
-
         self.class_info_dict = self.load_classes_from_json()
         self.class_info_df = self.load_classes_from_csv()
 
     def load_classes_from_json(self):
-        json_filepath = os.path.join(self.file_path, 'imagenet_class_info.json')
+        json_filepath = os.path.join(self.project_path, 'src', 'data', 'imagenet_class_info.json')
         with open(json_filepath) as file:
             return json.load(file)
 
     def load_classes_from_csv(self):
-        csv_filepath = os.path.join(self.file_path, 'classes_in_imagenet.csv')
+        csv_filepath = os.path.join(self.project_path, 'src', 'data', 'classes_in_imagenet.csv')
         return pd.read_csv(csv_filepath)
 
     def setup_directories(self):
-        self.imagenet_images_folder = os.path.join(self.file_path, self.data_root)
+        self.imagenet_images_folder = os.path.join(self.project_path, self.data_root)
         if not os.path.isdir(self.imagenet_images_folder):
             os.mkdir(self.imagenet_images_folder)
             self.logger.info(f"Created directory at {self.imagenet_images_folder}")

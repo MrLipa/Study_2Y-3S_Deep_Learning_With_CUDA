@@ -7,6 +7,9 @@ from .singleton import Singleton
 
 class Logger(metaclass=Singleton):
     def __init__(self, name, level, log_directory, log_file):
+        self.project_path = os.environ.get('PROJECT_PATH')
+        log_directory = os.path.join(self.project_path, log_directory)
+
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
 

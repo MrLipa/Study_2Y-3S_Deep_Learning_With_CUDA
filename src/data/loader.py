@@ -11,9 +11,10 @@ from ..utils import Singleton
 
 class Loader(metaclass=Singleton):
     def __init__(self, input_filepath, output_filepath, split_proportions, image_size, logger):
-        self.file_path = os.path.dirname(os.path.realpath(__file__))
-        self.input_filepath = os.path.join(self.file_path, input_filepath)
-        self.output_filepath = os.path.join(self.file_path, output_filepath)
+        self.project_path = os.environ.get('PROJECT_PATH')
+
+        self.input_filepath = os.path.join(self.project_path, input_filepath)
+        self.output_filepath = os.path.join(self.project_path, output_filepath)
         self.split_proportions = split_proportions
         self.image_size = image_size
         self.logger = logger

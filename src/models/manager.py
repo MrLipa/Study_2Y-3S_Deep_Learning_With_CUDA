@@ -2,20 +2,19 @@
 
 import mlflow
 import os
-import torch.nn as nn
-from ..data import Loader
-from ..utils import Logger, Singleton
+from ..utils import Singleton
 
 
 class Manager(metaclass=Singleton):
-    def __init__(self, model: nn.Module, data_loader: Loader, logger: Logger = None,
-                 mlflow_enabled: bool = False, mlflow_path: str = './../mlruns',
-                 experiment_name: str = 'Image Colorizator') -> None:
+    def __init__(self, model, data_loader, logger, mlflow_enabled, mlflow_path, experiment_name) -> None:
+        self.project_path = os.environ.get('PROJECT_PATH')
+
         self.model = model
         self.data_loader = data_loader
         self.logger = logger
+
         self.mlflow_enabled = mlflow_enabled
-        self.mlflow_path = mlflow_path
+        self.mlflow_path = os.path.join(self.project_path, mlflow_path)
         self.experiment_name = experiment_name
 
         if self.mlflow_enabled:
