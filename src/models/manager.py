@@ -2,6 +2,9 @@
 
 import mlflow
 import os
+import torch
+
+from . import Model
 from ..utils import Singleton
 
 
@@ -35,11 +38,16 @@ class Manager(metaclass=Singleton):
     def _train_model(self):
         pass
 
-    def save_model(self):
-        pass
+    def save_model(self, model_path):
+        # torch.save(self.model.state_dict(), model_path)
 
-    def load_model(self):
-        pass
+        torch.save(self.model, model_path)
+
+    def load_model(self, model_path):
+        # self.model = Model(*args, **kwargs)
+        # self.model.load_state_dict(torch.load(model_path))
+        # self.model.eval()
+        self.model = torch.load(model_path)
 
     def delete_model_folder(self):
         pass
