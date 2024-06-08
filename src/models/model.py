@@ -65,7 +65,7 @@ class Model(nn.Module):
         model8 += [nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True), ]
         model8 += [nn.ReLU(True), ]
 
-        model8 += [nn.Conv2d(256, 313, kernel_size=1, stride=1, padding=0, bias=True), ]
+        model8 += [nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0, bias=True), ]
 
         self.model1 = nn.Sequential(*model1)
         self.model2 = nn.Sequential(*model2)
@@ -77,7 +77,7 @@ class Model(nn.Module):
         self.model8 = nn.Sequential(*model8)
 
         self.softmax = nn.Softmax(dim=1)
-        self.model_out = nn.Conv2d(313, 2, kernel_size=1, padding=0, dilation=1, stride=1, bias=False)
+        self.model_out = nn.Conv2d(256, 2, kernel_size=1, padding=0, dilation=1, stride=1, bias=False)
         self.upsample4 = nn.Upsample(scale_factor=4, mode='bilinear')
 
     def forward(self, input_l):
@@ -91,5 +91,5 @@ class Model(nn.Module):
         conv8_3 = self.model8(conv7_3)
         out_reg = self.model_out(self.softmax(conv8_3))
 
-        return self.upsample4(out_reg) * 100. + 50.
+        return self.upsample4(out_reg) * 110.
 
