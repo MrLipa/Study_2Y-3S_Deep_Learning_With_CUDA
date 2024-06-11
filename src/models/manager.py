@@ -3,6 +3,7 @@
 import mlflow
 import os
 import torch
+import torchvision
 
 from . import Model
 from ..utils import Singleton
@@ -11,7 +12,7 @@ from ..utils import Singleton
 class Manager(metaclass=Singleton):
     def __init__(self, model, data_loader, logger, mlflow_enabled, mlflow_path, experiment_name) -> None:
         self.project_path = os.environ.get('PROJECT_PATH')
-
+        print("aaa")
         self.model = model
         self.data_loader = data_loader
         self.logger = logger
@@ -19,6 +20,31 @@ class Manager(metaclass=Singleton):
         self.mlflow_enabled = mlflow_enabled
         self.mlflow_path = os.path.join(self.project_path, mlflow_path)
         self.experiment_name = experiment_name
+
+        self.train_images = []
+        self.test_images = []
+        self.validation_images = []
+
+        for file in os.listdir(self.data_loader.processed_train_path):
+            print(file)
+            path = os.path.join(self.data_loader.processed_train_path, file)
+            print(path)
+            img = torchvision.io.read_image(path)
+            self.train_images.append(img)
+
+        for file in os.listdir(self.data_loader.processed_test_path):
+            print(file)
+            path = os.path.join(self.data_loader.processed_test_path, file)
+            print(path)
+            img = torchvision.io.read_image(path)
+            self.test_images.append(img)
+
+        for file in os.listdir(self.data_loader.processed_valid_path):
+            print(file)
+            path = os.path.join(self.data_loader.processed_valid_path, file)
+            print(path)
+            img = torchvision.io.read_image(path)
+            self.validation_images.append(img)
 
         if self.mlflow_enabled:
             self.init_mlflow()
@@ -33,10 +59,17 @@ class Manager(metaclass=Singleton):
         self.logger.info(f"MLflow configured with tracking URI: {self.mlflow_path} and experiment name: {self.experiment_name}")
 
     def train_model(self):
-        pass
+        opt = torch.optim.Adam(self.model.parameters())
 
-    def _train_model(self):
-        pass
+        self.data_loader.processed_train_path = os.path.join(self.data_loader.output_filepath, 'train')
+        self.data_loader.processed_valid_path = os.path.join(self.data_loader.output_filepath, 'valid')
+        self.data_loader.processed_test_path = os.path.join(self.data_loader.output_filepath, 'test')
+
+        opt.zero_grad(True)
+        pred = self.model(self.train_images[0])
+        loss = torch.nn.CrossEntropyLoss()(pred, self.train_images[0])
+        loss.backward()
+        opt.step()
 
     def save_model(self, model_path):
         # torch.save(self.model.state_dict(), model_path)

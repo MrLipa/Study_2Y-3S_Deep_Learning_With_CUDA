@@ -1,10 +1,13 @@
 # src/models/model.py
 
 import torch.nn as nn
+from ..utils import lossFunction
+import torch
+
 
 class Model(nn.Module):
     def __init__(self, norm_layer=nn.BatchNorm2d):
-        super(Model, self).__init__()
+        super().__init__()
 
         model1 = [nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=True), ]
         model1 += [nn.ReLU(True), ]
@@ -93,3 +96,12 @@ class Model(nn.Module):
 
         return self.upsample4(out_reg) * 110.
 
+    def training_step(self, batch, batch_nb: int):
+        x, y = batch
+        lossF = lossFunction.LossFunction()
+        loss = lossF.imageEntrophyLoss(self, self(x), y)
+
+        return loss
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=0.02)
