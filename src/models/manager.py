@@ -1,56 +1,56 @@
 # src/models/manager.py
 
-import mlflow
 import os
 import torch
-
-from . import Model
-from ..utils import Singleton
+import torch.nn as nn
+from datetime import datetime
+from typing import Optional
+from ..utils.singleton import Singleton
 
 
 class Manager(metaclass=Singleton):
-    def __init__(self, model, data_loader, logger, mlflow_enabled, mlflow_path, experiment_name) -> None:
-        self.project_path = os.environ.get('PROJECT_PATH')
-
+    def __init__(self, model, data_loader, logger, device) -> None:
         self.model = model
         self.data_loader = data_loader
         self.logger = logger
+        self.device = device
 
-        self.mlflow_enabled = mlflow_enabled
-        self.mlflow_path = os.path.join(self.project_path, mlflow_path)
-        self.experiment_name = experiment_name
+    def train_model(self, criterion: nn.Module, optimizer: torch.optim.Optimizer, epochs: int) -> None:
+        self.model.train()
+        for epoch in range(epochs):
+            for images, labels in self.data_loader.train_data:
+                images, labels = images.to(self.device), labels.to(self.device)
+                optimizer.zero_grad()
+                output = self.model(images)
+                loss = criterion(output, labels)
+                loss.backward()
+                optimizer.step()
+            self.logger.info(f"Epoch {epoch}, Loss: {loss.item()}")
 
-        if self.mlflow_enabled:
-            self.init_mlflow()
+    def save_model(self, models_folder_path: str) -> None:
+        os.makedirs(models_folder_path, exist_ok=True)
+        current_time = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+        path = os.path.join(models_folder_path, f"image_colorizer_{current_time}.pth")
+        torch.save(self.model.state_dict(), path)
+        self.logger.info(f"Model saved to {path}")
 
-    def init_mlflow(self):
-        if not os.path.exists(self.mlflow_path):
-            os.makedirs(self.mlflow_path, exist_ok=True)
+    def load_model(self, model_path: str = "", if_latest: bool = False) -> None:
+        path = model_path
+        if if_latest:
+            path = self._get_latest_model_path(model_path)
+        if path:
+            self.model.load_state_dict(torch.load(path))
+            self.model.eval()
+            self.logger.info(f"Loaded model from {path}")
 
-        mlflow.set_tracking_uri(self.mlflow_path)
-        mlflow.set_experiment(self.experiment_name)
-
-        self.logger.info(f"MLflow configured with tracking URI: {self.mlflow_path} and experiment name: {self.experiment_name}")
-
-    def train_model(self):
-        pass
-
-    def _train_model(self):
-        pass
-
-    def save_model(self, model_path):
-        # torch.save(self.model.state_dict(), model_path)
-
-        torch.save(self.model, model_path)
-
-    def load_model(self, model_path):
-        # self.model = Model(*args, **kwargs)
-        # self.model.load_state_dict(torch.load(model_path))
-        # self.model.eval()
-        self.model = torch.load(model_path)
-
-    def delete_model_folder(self):
-        pass
+    def _get_latest_model_path(self, models_folder_path: str) -> Optional[str]:
+        model_files = [f for f in os.listdir(models_folder_path) if f.endswith('.pth')]
+        if not model_files:
+            self.logger.error("No model files found.")
+            return None
+        latest_model_file = max(model_files, key=lambda x: datetime.strptime(
+            x.replace('image_colorizer_', '').replace('.pth', ''), "%Y-%m-%d_%H-%M-%S"))
+        return os.path.join(models_folder_path, latest_model_file)
 
     def predict_model(self):
         pass

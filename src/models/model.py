@@ -2,6 +2,7 @@
 
 import torch.nn as nn
 
+
 class Model(nn.Module):
     def __init__(self, norm_layer=nn.BatchNorm2d):
         super(Model, self).__init__()
@@ -92,4 +93,3 @@ class Model(nn.Module):
         out_reg = self.model_out(self.softmax(conv8_3))
 
         return self.upsample4(out_reg) * 110.
-

@@ -6,4 +6,3 @@ requests
 pandas
 ipykernel
 flake8
-mlflow

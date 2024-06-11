@@ -6,15 +6,13 @@ import shutil
 import cv2
 from torchvision import transforms
 from .image_net_scraper import ImageNetScraper
-from ..utils import Singleton
+from ..utils.singleton import Singleton
 
 
 class Loader(metaclass=Singleton):
     def __init__(self, input_filepath, output_filepath, split_proportions, image_size, logger):
-        self.project_path = os.environ.get('PROJECT_PATH')
-
-        self.input_filepath = os.path.join(self.project_path, input_filepath)
-        self.output_filepath = os.path.join(self.project_path, output_filepath)
+        self.input_filepath = input_filepath
+        self.output_filepath = output_filepath
         self.split_proportions = split_proportions
         self.image_size = image_size
         self.logger = logger

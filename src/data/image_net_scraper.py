@@ -6,13 +6,11 @@ import json
 from multiprocessing import Pool, cpu_count
 from requests.exceptions import ConnectionError, ReadTimeout, TooManyRedirects, MissingSchema, InvalidURL
 import pandas as pd
-from ..utils import Singleton
+from ..utils.singleton import Singleton
 
 
 class ImageNetScraper(metaclass=Singleton):
     def __init__(self, class_list, images_per_class, data_root, multiprocessing_workers, logger):
-        self.project_path = os.environ.get('PROJECT_PATH')
-
         self.images_per_class = images_per_class
         self.data_root = data_root
         self.class_list = class_list
@@ -23,19 +21,18 @@ class ImageNetScraper(metaclass=Singleton):
         self.class_info_df = self.load_classes_from_csv()
 
     def load_classes_from_json(self):
-        json_filepath = os.path.join(self.project_path, 'src', 'data', 'imagenet_class_info.json')
+        json_filepath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', 'src', 'resources', 'imagenet_class_info.json')
         with open(json_filepath) as file:
             return json.load(file)
 
     def load_classes_from_csv(self):
-        csv_filepath = os.path.join(self.project_path, 'src', 'data', 'classes_in_imagenet.csv')
+        csv_filepath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', 'src', 'resources', 'classes_in_imagenet.csv')
         return pd.read_csv(csv_filepath)
 
     def setup_directories(self):
-        self.imagenet_images_folder = os.path.join(self.project_path, self.data_root)
-        if not os.path.isdir(self.imagenet_images_folder):
-            os.mkdir(self.imagenet_images_folder)
-            self.logger.info(f"Created directory at {self.imagenet_images_folder}")
+        if not os.path.isdir(self.data_root):
+            os.mkdir(self.data_root)
+            self.logger.info(f"Created directory at {self.data_root}")
 
     def get_image(self, img_url, class_name, class_images_counter):
         response = requests.get(img_url, timeout=1)
@@ -46,7 +43,7 @@ class ImageNetScraper(metaclass=Singleton):
         if len(img_content) < 1000:
             self.logger.error("Image too small")
             raise ValueError("Image too small")
-        img_file_path = os.path.join(self.imagenet_images_folder, f'{class_name}_{class_images_counter}.png')
+        img_file_path = os.path.join(self.data_root, f'{class_name}_{class_images_counter}.png')
         with open(img_file_path, 'wb') as img_f:
             img_f.write(img_content)
         self.logger.info(f"Saved image {img_file_path}")
