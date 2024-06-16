@@ -16,16 +16,7 @@ class Manager(metaclass=Singleton):
         self.device = device
 
     def train_model(self, criterion: nn.Module, optimizer: torch.optim.Optimizer, epochs: int) -> None:
-        self.model.train()
-        for epoch in range(epochs):
-            for images, labels in self.data_loader.train_data:
-                images, labels = images.to(self.device), labels.to(self.device)
-                optimizer.zero_grad()
-                output = self.model(images)
-                loss = criterion(output, labels)
-                loss.backward()
-                optimizer.step()
-            self.logger.info(f"Epoch {epoch}, Loss: {loss.item()}")
+        pass
 
     def save_model(self, models_folder_path: str) -> None:
         os.makedirs(models_folder_path, exist_ok=True)

@@ -7,39 +7,51 @@ import cv2
 from torchvision import transforms
 from .image_net_scraper import ImageNetScraper
 from ..utils.singleton import Singleton
+from torch.utils.data import Dataset, DataLoader
+
+
+class CustomDataset(Dataset):
+    def __init__(self, directory, transform=None):
+        self.image_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(('.jpg', '.png', '.jpeg'))]
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_files)
+
+    def __getitem__(self, idx):
+        img_path = self.image_files[idx]
+        image = cv2.imread(img_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+
+        if self.transform:
+            image = self.transform(image)
+
+        image = torch.from_numpy(image).permute(2, 0, 1).float()
+        return image
 
 
 class Loader(metaclass=Singleton):
-    def __init__(self, input_filepath, output_filepath, split_proportions, image_size, logger):
+    def __init__(self, input_filepath, split_proportions, image_size, logger, class_list, images_per_class, multiprocessing_workers, batch_size):
         self.input_filepath = input_filepath
-        self.output_filepath = output_filepath
         self.split_proportions = split_proportions
         self.image_size = image_size
         self.logger = logger
+        self.batch_size = batch_size
 
-        self.image_net_scraper = ImageNetScraper(['n00006484', 'n00007846', 'n00440382', 'n00445055', 'n00447540'], images_per_class=2, data_root=input_filepath, multiprocessing_workers=5, logger=logger)
+        self.image_net_scraper = ImageNetScraper(class_list=class_list, images_per_class=images_per_class, data_root=input_filepath, multiprocessing_workers=multiprocessing_workers, logger=logger)
 
-        self.transform = transforms.Compose([
-            transforms.Resize(self.image_size),
-            transforms.ToTensor()
-        ])
-
-    def setup_directories(self):
         self.train_path = os.path.join(self.input_filepath, 'train')
         self.valid_path = os.path.join(self.input_filepath, 'valid')
         self.test_path = os.path.join(self.input_filepath, 'test')
 
-        self.processed_train_path = os.path.join(self.output_filepath, 'train')
-        self.processed_valid_path = os.path.join(self.output_filepath, 'valid')
-        self.processed_test_path = os.path.join(self.output_filepath, 'test')
+        self.train_data = None
+        self.valid_data = None
+        self.test_data = None
 
+    def setup_directories(self):
         os.makedirs(self.train_path, exist_ok=True)
         os.makedirs(self.valid_path, exist_ok=True)
         os.makedirs(self.test_path, exist_ok=True)
-
-        os.makedirs(self.processed_train_path, exist_ok=True)
-        os.makedirs(self.processed_valid_path, exist_ok=True)
-        os.makedirs(self.processed_test_path, exist_ok=True)
 
         self.logger.info("Created directories")
 
@@ -69,25 +81,20 @@ class Loader(metaclass=Singleton):
             shutil.move(images[idx], os.path.join(self.test_path, os.path.basename(images[idx])))
             self.logger.info(f"Moved {images[idx]} to {self.test_path}")
 
-    def process_data(self):
-        for data_type in ['train', 'valid', 'test']:
-            input_dir = os.path.join(self.input_filepath, data_type)
-            output_dir = os.path.join(self.output_filepath, data_type)
-            files = [f for f in os.listdir(input_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
-            self.logger.info(f"Processing {len(files)} images in {data_type} directory.")
+    def setup_data_loaders(self):
+        transform = transforms.Compose([
+            transforms.Lambda(lambda x: cv2.resize(x, (256, 256)))
+        ])
 
-            for file in files:
-                file_path = os.path.join(input_dir, file)
-                image = cv2.imread(file_path)
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
-                image = cv2.resize(image, self.image_size)
-                output_path = os.path.join(output_dir, file)
-                cv2.imwrite(output_path, image)
-                self.logger.info(f"Processed and saved {output_path}")
+        self.train_data = DataLoader(CustomDataset(self.train_path, transform=transform), batch_size=self.batch_size, shuffle=True)
+        self.valid_data = DataLoader(CustomDataset(self.valid_path, transform=transform), batch_size=self.batch_size, shuffle=True)
+        self.test_data = DataLoader(CustomDataset(self.test_path, transform=transform), batch_size=self.batch_size, shuffle=True)
+
+        self.logger.info("DataLoaders for train, valid, and test are now set up.")
 
     def clear_directories(self):
-        for directory in [self.input_filepath, self.output_filepath]:
-            if os.path.exists(directory):
-                shutil.rmtree(directory)
-                os.makedirs(directory, exist_ok=True)
-                self.logger.info(f"Cleared and reset directory {directory}")
+        directory = self.input_filepath
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+            os.makedirs(directory, exist_ok=True)
+            self.logger.info(f"Cleared and reset directory {directory}")

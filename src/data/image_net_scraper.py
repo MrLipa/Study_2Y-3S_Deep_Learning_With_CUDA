@@ -3,18 +3,18 @@
 import os
 import requests
 import json
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from requests.exceptions import ConnectionError, ReadTimeout, TooManyRedirects, MissingSchema, InvalidURL
 import pandas as pd
 from ..utils.singleton import Singleton
 
 
 class ImageNetScraper(metaclass=Singleton):
-    def __init__(self, class_list, images_per_class, data_root, multiprocessing_workers, logger):
+    def __init__(self, class_list, images_per_class, multiprocessing_workers, data_root, logger):
         self.images_per_class = images_per_class
         self.data_root = data_root
         self.class_list = class_list
-        self.multiprocessing_workers = multiprocessing_workers if multiprocessing_workers else cpu_count()
+        self.multiprocessing_workers = multiprocessing_workers
         self.logger = logger
 
         self.class_info_dict = self.load_classes_from_json()
@@ -35,7 +35,9 @@ class ImageNetScraper(metaclass=Singleton):
             self.logger.info(f"Created directory at {self.data_root}")
 
     def get_image(self, img_url, class_name, class_images_counter):
-        response = requests.get(img_url, timeout=1)
+        if not img_url.startswith("https://"):
+            img_url = "https://" + img_url.lstrip("http://")
+        response = requests.get(img_url, timeout=0.5)
         if 'image' not in response.headers.get('content-type', ''):
             self.logger.error("Not an image")
             raise ValueError("Not an image")
@@ -65,7 +67,7 @@ class ImageNetScraper(metaclass=Singleton):
         self.logger.info(f"Downloaded images for class {class_name}.")
 
     def fetch_image_urls(self, wnid):
-        url = f'http://www.image-net.org/api/imagenet.synset.geturls?wnid={wnid}'
+        url = f'https://www.image-net.org/api/imagenet.synset.geturls?wnid={wnid}'
         response = requests.get(url)
         return [url.decode('utf-8') for url in response.content.splitlines()]
 
@@ -77,5 +79,9 @@ class ImageNetScraper(metaclass=Singleton):
 
     def run(self):
         self.setup_directories()
-        with Pool(self.multiprocessing_workers) as pool:
-            pool.map(self.scrape_class, self.class_list)
+        if self.multiprocessing_workers:
+            with Pool(self.multiprocessing_workers) as pool:
+                pool.map(self.scrape_class, self.class_list)
+        else:
+            for class_ in self.class_list:
+                self.scrape_class(class_)
