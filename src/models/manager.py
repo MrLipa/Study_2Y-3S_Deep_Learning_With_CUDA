@@ -17,7 +17,10 @@ class Manager(metaclass=Singleton):
     def train_model(self, criterion, optimizer: torch.optim.Optimizer, epochs: int) -> None:
         for epoch in range(epochs):
             for gray, lab in self.data_loader.train_gray_data_loader, self.data_loader.train_lab_data_loader:
+                gray = gray[:, None, :, :]
                 images, labels = gray.to(self.device), lab.to(self.device)
+                print(f"images: {images.shape}")
+                print(f"labels: {labels.shape}")
                 optimizer.zero_grad()
                 outputs = self.model(images)
                 loss = criterion(outputs, labels)

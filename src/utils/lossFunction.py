@@ -31,6 +31,14 @@ class LossFunction():
         assumend output of shape (hxw) x q
         length of high*width and depth of number of classes q
         '''
+        print(f"output: {output.shape}")
+        print(f"target: {target.shape}")
+        sum = 0
+        for image, groundTrouth in zip(output, target):
+            sum += self.oneImageEntrophy(image, groundTrouth)
+        return sum / target[0]
+
+    def oneImageEntrophy(self, output, target):
         sum = 0
         for row in range(target.shape[0]):
             for col in range(target.shape[1]):

@@ -35,15 +35,15 @@ def main():
                          logger=logger, class_list=class_list, images_per_class=images_per_class,
                          multiprocessing_workers=multiprocessing_workers, batch_size=batch_size, loss_function=loss_function)
 
-    loader.clear_directories()
+    # loader.clear_directories()
     loader.setup_paths()
-    loader.load_and_split_data()
+    # loader.load_and_split_data()
     loader.setup_data_loaders()
 
     model = models.Model()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     manager = models.Manager(model, loader, logger, device)
-    manager.train_model(loss_function, optimizer, epochs)
+    manager.train_model(loss_function.imageEntrophyLoss, optimizer, epochs)
 
     logger.info(f"Session completed in {time() - start_time:.2f} seconds")
 
