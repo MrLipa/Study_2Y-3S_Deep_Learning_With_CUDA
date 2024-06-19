@@ -1,8 +1,8 @@
 # src/models/manager.py
 
 import os
+import cv2
 import torch
-import torch.nn as nn
 from datetime import datetime
 from typing import Optional
 from ..utils.singleton import Singleton
@@ -15,8 +15,15 @@ class Manager(metaclass=Singleton):
         self.logger = logger
         self.device = device
 
-    def train_model(self, criterion: nn.Module, optimizer: torch.optim.Optimizer, epochs: int) -> None:
-        pass
+    def train_model(self, criterion, optimizer: torch.optim.Optimizer, epochs: int) -> None:
+        for epoch in range(epochs):
+            for gray, lab in self.data_loader.train_gray, self.data_loader.train_lab:
+                images, labels = gray.to(self.device), lab.to(self.device)
+                optimizer.zero_grad()
+                outputs = self.model(images)
+                loss = criterion(outputs, labels)
+                optimizer.step()
+            self.logger.info(f"Epoch {epoch}, Loss: {loss}")
 
     def save_model(self, models_folder_path: str) -> None:
         os.makedirs(models_folder_path, exist_ok=True)

@@ -21,7 +21,7 @@ class LossFunction():
         b = int(bClass * self.scaleFactor + int(self.scaleFactor/2))
         return a, b
 
-    def getWeight(setlf, targetClass):
+    def getWeight(self, targetClass):
         return 1
 
     def imageEntrophyLoss(self, output, target):
