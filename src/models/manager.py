@@ -1,7 +1,6 @@
 # src/models/manager.py
 
 import os
-import cv2
 import torch
 from datetime import datetime
 from typing import Optional
@@ -17,7 +16,7 @@ class Manager(metaclass=Singleton):
 
     def train_model(self, criterion, optimizer: torch.optim.Optimizer, epochs: int) -> None:
         for epoch in range(epochs):
-            for gray, lab in self.data_loader.train_gray, self.data_loader.train_lab:
+            for gray, lab in self.data_loader.train_gray_data_loader, self.data_loader.train_lab_data_loader:
                 images, labels = gray.to(self.device), lab.to(self.device)
                 optimizer.zero_grad()
                 outputs = self.model(images)
