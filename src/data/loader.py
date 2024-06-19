@@ -19,8 +19,6 @@ class CustomDataset(Dataset):
             self.code = cv2.COLOR_BGR2RGB
         elif image_type == 'lab':
             self.code = cv2.COLOR_BGR2LAB
-        elif image_type == 'gray':
-            self.code = cv2.COLOR_BGR2GRAY
 
         self.transform = transform
 
@@ -47,7 +45,7 @@ class Loader(metaclass=Singleton):
         self.image_net_scraper = ImageNetScraper(class_list=class_list, images_per_class=images_per_class, data_root=input_filepath, multiprocessing_workers=multiprocessing_workers, logger=logger)
 
     def setup_paths(self):
-        types = ['original', 'lab', 'gray']
+        types = ['original', 'lab']
         stages = ['train', 'valid', 'test']
         self.paths = {}
         for t in types:
@@ -80,7 +78,6 @@ class Loader(metaclass=Singleton):
             img = cv2.imread(image_path)
             self.save_original_image(image_path, category)
             self.save_lab_image(img, image_path, category)
-            self.save_gray_image(img, image_path, category)
 
     def save_original_image(self, img_path, category):
         destination = self.paths['original'][category]
@@ -90,16 +87,12 @@ class Loader(metaclass=Singleton):
         lab_image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
         cv2.imwrite(os.path.join(self.paths['lab'][category], os.path.basename(img_path)), lab_image)
 
-    def save_gray_image(self, image, img_path, category):
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite(os.path.join(self.paths['gray'][category], os.path.basename(img_path)), gray_image)
-
     def setup_data_loaders(self):
         transform = transforms.Compose([
             transforms.Lambda(lambda x: cv2.resize(x, (256, 256)))
         ])
 
-        for t in ['original', 'lab', 'gray']:
+        for t in ['original', 'lab']:
             for stage in ['train', 'valid', 'test']:
                 dataset = CustomDataset(self.paths[t][stage], transform, image_type=t)
                 setattr(self, f"{stage}_{t}_data_loader", DataLoader(dataset, batch_size=self.batch_size, shuffle=True))
