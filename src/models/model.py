@@ -82,7 +82,7 @@ class Model(nn.Module):
         self.upsample4 = nn.Upsample(scale_factor=4, mode='bilinear')
 
     def forward(self, input_l):
-        conv1_2 = self.model1((input_l - 50.) / 100.)
+        conv1_2 = self.model1(input_l/1.0) #self.model1((input_l - 50.) / 100.)
         conv2_2 = self.model2(conv1_2)
         conv3_3 = self.model3(conv2_2)
         conv4_3 = self.model4(conv3_3)

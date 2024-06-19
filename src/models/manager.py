@@ -15,7 +15,21 @@ class Manager(metaclass=Singleton):
         self.device = device
 
     def train_model(self, criterion, optimizer: torch.optim.Optimizer, epochs: int) -> None:
+<<<<<<< HEAD
         pass
+=======
+        for epoch in range(epochs):
+            for gray, lab in self.data_loader.train_gray_data_loader, self.data_loader.train_lab_data_loader:
+                gray = gray[:, None, :, :]
+                images, labels = gray.to(self.device), lab.to(self.device)
+                print(f"images: {images.shape}")
+                print(f"labels: {labels.shape}")
+                optimizer.zero_grad()
+                outputs = self.model(images)
+                loss = criterion(outputs, labels)
+                optimizer.step()
+            self.logger.info(f"Epoch {epoch}, Loss: {loss}")
+>>>>>>> 5d88e669eb71ada078666a1957339f2f789e0cfe
 
     def save_model(self, models_folder_path: str) -> None:
         os.makedirs(models_folder_path, exist_ok=True)
