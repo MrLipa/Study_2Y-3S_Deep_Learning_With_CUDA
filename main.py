@@ -35,9 +35,9 @@ def main():
                          logger=logger, class_list=class_list, images_per_class=images_per_class,
                          multiprocessing_workers=multiprocessing_workers, batch_size=batch_size, loss_function=loss_function)
 
-    # loader.clear_directories()
+    loader.clear_directories()
     loader.setup_paths()
-    # loader.load_and_split_data()
+    loader.load_and_split_data()
     loader.setup_data_loaders()
 
     model = models.Model()
