@@ -5,7 +5,7 @@ import torch
 from datetime import datetime
 from typing import Optional
 from ..utils.singleton import Singleton
-
+from torch.nn.functional import interpolate
 
 class Manager(metaclass=Singleton):
     def __init__(self, model, data_loader, logger, device) -> None:
@@ -15,7 +15,20 @@ class Manager(metaclass=Singleton):
         self.device = device
 
     def train_model(self, criterion, optimizer: torch.optim.Optimizer, epochs: int) -> None:
-        pass
+        for epoch in range(epochs):
+            for lab in self.data_loader.train_lab_data_loader:
+                L = lab[:,:,:,0]                    # get L channel to for input
+                L = L[:, :, :, None]                # add 1 as channel dimention
+                L = torch.permute(L, (0,3,1,2))     # permute batch to shape (batch_szie, channels, H, W)
+                input, groudTrouth = L.to(self.device), lab.to(self.device)
+                optimizer.zero_grad()
+                outputs = self.model(input)
+                loss = criterion(outputs, groudTrouth)
+                print(f"loss: {loss}")
+                loss.backward()
+                print("backward")
+                optimizer.step()
+            self.logger.info(f"Epoch {epoch}, Loss: {loss}")
 
     def save_model(self, models_folder_path: str) -> None:
         os.makedirs(models_folder_path, exist_ok=True)
@@ -42,5 +55,25 @@ class Manager(metaclass=Singleton):
             x.replace('image_colorizer_', '').replace('.pth', ''), "%Y-%m-%d_%H-%M-%S"))
         return os.path.join(models_folder_path, latest_model_file)
 
+    def _class2ab(self, inClass):
+        aClass = int(inClass / int(256/self.scaleFactor))
+        a = int(aClass * self.scaleFactor + int(self.scaleFactor/2))
+        bClass = inClass - aClass * int(256/self.scaleFactor)
+        b = int(bClass * self.scaleFactor + int(self.scaleFactor/2))
+        return a, b
+
     def predict_model(self):
-        pass
+        predictedImages = None
+        for lab in self.data_loader.train_lab_data_loader:
+            L = lab[:,:,:,0]                    # get L channel to for input
+            L = L[:, :, :, None]                # add 1 as channel dimention
+            L = torch.permute(L, (0,3,1,2))     # permute batch to shape (batch_szie, channels, H, W)
+            input, groudTrouth = L.to(self.device), lab.to(self.device)
+            outputs = self.model(input)
+            outputs = interpolate(outputs, scale_factor=4, mode='bilinear')
+            for image, Lchannel in zip(outputs, L):
+                for row in range(outputs.size()[0]):
+                    for col in range(outputs.size()[1]):
+                        a, b = self._class2ab(torch.argmax(outputs[row,col]))
+                        # TODO: create imags from Lchannel, a, b and return them
+

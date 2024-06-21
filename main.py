@@ -43,7 +43,7 @@ def main():
     model = models.Model()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     manager = models.Manager(model, loader, logger, device)
-    manager.train_model(loss_function.imageEntrophyLoss, optimizer, epochs)
+    manager.train_model(loss_function, optimizer, epochs)
 
     logger.info(f"Session completed in {time() - start_time:.2f} seconds")
 

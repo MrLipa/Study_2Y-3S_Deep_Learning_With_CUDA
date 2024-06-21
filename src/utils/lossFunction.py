@@ -1,12 +1,15 @@
-import math
+import torch
+from torch.nn.modules.loss import _Loss
+from torch.nn.functional import interpolate
 
-class LossFunction():
+class LossFunction(_Loss):
     def __init__(self, numberOfBins = 16):
         '''
         number of bins per channel a and b, best if 256 divided by it is a round number
         '''
         self.numberOfBins = numberOfBins
         self.scaleFactor = int(256/self.numberOfBins)
+        super().__init__()
 
     def lab2class(self, pixel):
         L, a, b = pixel
@@ -14,35 +17,32 @@ class LossFunction():
         bClass = int(b / self.scaleFactor)
         return aClass * int(256/self.scaleFactor) + bClass
 
-    def class2ab(self, inClass):
-        aClass = int(inClass / int(256/self.scaleFactor))
-        a = int(aClass * self.scaleFactor + int(self.scaleFactor/2))
-        bClass = inClass - aClass * int(256/self.scaleFactor)
-        b = int(bClass * self.scaleFactor + int(self.scaleFactor/2))
-        return a, b
-
     def getWeight(self, targetClass):
         return 1
 
-    def imageEntrophyLoss(self, output, target):
+    def forward(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         '''
         output - nn output of shape hw x q
         target - target image
         assumend output of shape (hxw) x q
         length of high*width and depth of number of classes q
         '''
-        print(f"output: {output.shape}")
-        print(f"target: {target.shape}")
+        target = torch.permute(target, (0,3,2,1)) # permute target image to (batchSize, channels, H, W)
+        target = interpolate(target, scale_factor=0.25, mode='bilinear') # downsample image to net output size
+        target = torch.permute(target, (0,2,3,1)) # permute image to (batchSize, H, W, classes) to match target
+        target = torch.flatten(target, start_dim=1, end_dim=2) #flatten for speed
+
+        output = torch.permute(output, (0,2,3,1)) # permute net output to (batchSize, H, W, classes) to match target
+        output = torch.flatten(output, start_dim=1, end_dim=2) #flatteb for speed
         sum = 0
         for image, groundTrouth in zip(output, target):
             sum += self.oneImageEntrophy(image, groundTrouth)
-        return sum / target[0]
+        sum = sum / target.size()[0]
+        return torch.Tensor(sum)
 
-    def oneImageEntrophy(self, output, target):
+    def oneImageEntrophy(self, image, groundTrouth):
         sum = 0
-        for row in range(target.shape[0]):
-            for col in range(target.shape[1]):
-                pixel = row * target.shape[0] + col
-                targetClass = self.lab2class(target[row,col])
-                sum += self.getWeight(targetClass) * math.log(output[pixel][targetClass])
+        for classes, pixel in zip(image, groundTrouth):
+            targetClass = self.lab2class(pixel)
+            sum += self.getWeight(targetClass) * classes[targetClass].log()
         return -sum
