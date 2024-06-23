@@ -24,12 +24,14 @@ def main():
     split_proportions = (0.7, 0.2, 0.1)
     image_size = (256, 256)
     logger = logger
-    class_list = ['n00006484', 'n00007846', 'n00440382', 'n00445055', 'n00447540']
-    images_per_class = 5
+    # class_list = ['n00006484', 'n00007846', 'n00440382', 'n00445055', 'n00447540']
+    class_list = ['n00006484']
+    images_per_class = 70
     multiprocessing_workers = 5
     batch_size = 10
-    epochs = 15
-    loss_function = LossFunction()
+    epochs = 30
+    numberOfBins = 16
+    loss_function = LossFunction(numberOfBins)
 
     loader = data.Loader(input_filepath=input_filepath, split_proportions=split_proportions, image_size=image_size,
                          logger=logger, class_list=class_list, images_per_class=images_per_class,
@@ -46,6 +48,10 @@ def main():
     manager.train_model(loss_function, optimizer, epochs)
 
     logger.info(f"Session completed in {time() - start_time:.2f} seconds")
+
+    predicted = manager.predict_model(int(image_size[0]/numberOfBins))
+    manager.saveImages(predicted)
+    manager.save_model("./src/models/")
 
 
 if __name__ == '__main__':
