@@ -90,6 +90,7 @@ target/
 
 data/raw/
 data/processed/
+script
 
 # train models
 *.pth

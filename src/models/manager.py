@@ -9,6 +9,7 @@ from torch.nn.functional import interpolate
 import numpy as np
 import cv2
 
+
 class Manager(metaclass=Singleton):
     def __init__(self, model, data_loader, logger, device) -> None:
         self.model = model
