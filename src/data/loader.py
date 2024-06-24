@@ -44,7 +44,10 @@ class Loader(metaclass=Singleton):
         self.loss_function = loss_function
         self.image_net_scraper = ImageNetScraper(class_list=class_list, images_per_class=images_per_class, data_root=input_filepath, multiprocessing_workers=multiprocessing_workers, logger=logger)
 
+        os.makedirs(self.input_filepath, exist_ok=True)
+
     def setup_paths(self):
+
         types = ['original', 'lab']
         stages = ['train', 'valid', 'test']
         self.paths = {}

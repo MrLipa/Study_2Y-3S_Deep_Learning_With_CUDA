@@ -3,10 +3,11 @@ import sys
 import logging
 import torch
 from time import time
-from src import utils, data, models
 
 project_dir = os.path.abspath('.')
 sys.path.append(project_dir)
+
+from src import utils, data, models
 
 
 def main():
@@ -14,11 +15,11 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    logger = utils.Logger(name='image_colorizer', level=logging.INFO, log_directory='./logs',
+    logger = utils.Logger(name='image_colorizer', level=logging.INFO, log_directory=os.path.join(project_dir, 'logs'),
                           log_file='log_file.log').get_logger()
     logger.info(f"Session start on {device}")
 
-    input_filepath = './data'
+    input_filepath = os.path.join(project_dir, 'data')
     split_proportions = (0.7, 0.2, 0.1)
     image_size = (256, 256)
     logger = logger
@@ -45,7 +46,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     manager = models.Manager(model, loader, logger, device)
     manager.train_model(loss_function, optimizer, epochs)
-    manager.save_model("./models/")
+    manager.save_model(os.path.join(project_dir, 'models'))
 
     logger.info(f"Session completed in {time() - start_time:.2f} seconds")
 
