@@ -76,15 +76,22 @@ class Loader(metaclass=Singleton):
         for idx in indices:
             image_path = images[idx]
             img = cv2.imread(image_path)
-            self.save_original_image(image_path, category)
-            self.save_lab_image(img, image_path, category)
+            if img is None:
+                self.logger.error(f"Failed to load image: {image_path}")
+                continue
+
+            try:
+                lab_image = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+                self.save_original_image(image_path, category)
+                self.save_lab_image(lab_image, image_path, category)
+            except Exception as e:
+                self.logger.error(f"Error processing image {image_path}: {e}")
 
     def save_original_image(self, img_path, category):
         destination = self.paths['original'][category]
         shutil.move(img_path, os.path.join(destination, os.path.basename(img_path)))
 
-    def save_lab_image(self, image, img_path, category):
-        lab_image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+    def save_lab_image(self, lab_image, img_path, category):
         cv2.imwrite(os.path.join(self.paths['lab'][category], os.path.basename(img_path)), lab_image)
 
     def setup_data_loaders(self):

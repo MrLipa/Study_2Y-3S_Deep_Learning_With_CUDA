@@ -1,7 +1,9 @@
 # src/data/image_net_scraper.py
 
 import os
+import cv2
 import requests
+import numpy as np
 import json
 from multiprocessing import Pool
 from requests.exceptions import ConnectionError, ReadTimeout, TooManyRedirects, MissingSchema, InvalidURL
@@ -38,13 +40,22 @@ class ImageNetScraper(metaclass=Singleton):
         if not img_url.startswith("https://"):
             img_url = "https://" + img_url.lstrip("http://")
         response = requests.get(img_url, timeout=0.5)
+
         if 'image' not in response.headers.get('content-type', ''):
             self.logger.error("Not an image")
             raise ValueError("Not an image")
+
         img_content = response.content
         if len(img_content) < 1000:
             self.logger.error("Image too small")
             raise ValueError("Image too small")
+
+        nparr = np.frombuffer(img_content, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is None or img.size == 0:
+            self.logger.error("Failed to decode image or image is empty")
+            raise ValueError("Failed to decode image or image is empty")
+
         img_file_path = os.path.join(self.data_root, f'{class_name}_{class_images_counter}.png')
         with open(img_file_path, 'wb') as img_f:
             img_f.write(img_content)

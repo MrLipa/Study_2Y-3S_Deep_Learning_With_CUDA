@@ -17,9 +17,6 @@ class LossFunction(_Loss):
         bClass = int(b / self.scaleFactor)
         return aClass * int(256 / self.scaleFactor) + bClass
 
-    def get_weight(self, targetClass):
-        return 1
-
     def forward(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         '''
         output - nn output of shape hw x q
@@ -42,5 +39,5 @@ class LossFunction(_Loss):
         entropy_sum = 0
         for classes, pixel in zip(image, groundTruth):
             targetClass = self.lab2class(pixel)
-            entropy_sum += self.get_weight(targetClass) * torch.log(classes[targetClass])
+            entropy_sum += torch.log(classes[targetClass])
         return -entropy_sum

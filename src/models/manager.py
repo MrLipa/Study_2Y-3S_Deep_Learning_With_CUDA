@@ -5,7 +5,7 @@ import torch
 from datetime import datetime
 from typing import Optional
 from ..utils.singleton import Singleton
-from torch.nn.functional import interpolate
+import torch.nn.functional as F
 import numpy as np
 import cv2
 
@@ -20,18 +20,17 @@ class Manager(metaclass=Singleton):
     def train_model(self, criterion, optimizer: torch.optim.Optimizer, epochs: int) -> None:
         for epoch in range(epochs):
             for lab in self.data_loader.train_lab_data_loader:
-                L = lab[:,:,:,0]                    # get L channel to for input
-                L = L[:, :, :, None]                # add 1 as channel dimention
-                L = torch.permute(L, (0,3,1,2))     # permute batch to shape (batch_szie, channels, H, W)
-                input, groudTrouth = L.to(self.device), lab.to(self.device)
+                L = lab[:, :, :, 0]
+                L = L[:, :, :, None]
+                L = torch.permute(L, (0, 3, 1, 2))
+                input_tensor, ground_truth = L.to(self.device), lab.to(self.device)
                 optimizer.zero_grad()
-                outputs = self.model(input)
-                loss = criterion(outputs, groudTrouth)
-                print(f"loss: {loss}")
+                outputs = self.model(input_tensor)
+                loss = criterion(outputs, ground_truth)
                 loss.backward()
-                print("backward")
                 optimizer.step()
-            self.logger.info(f"Epoch {epoch}, Loss: {loss}")
+                self.logger.info(f"Epoch {epoch}, Batch loss: {loss.item()}")
+            self.logger.info(f"Epoch {epoch}, Final Loss: {loss.item()}")
 
     def save_model(self, models_folder_path: str) -> None:
         os.makedirs(models_folder_path, exist_ok=True)
@@ -65,34 +64,33 @@ class Manager(metaclass=Singleton):
         b = int(bClass * scaleFactor + int(scaleFactor/2))
         return a, b
 
-    def predict_model(self, scaleFactor):
+    def predict_model(self, scale_factor):
+        predicted_images = []
         counter = 0
-        predictedImages = []
+
         for lab in self.data_loader.train_lab_data_loader:
-            L = lab[:,:,:,0]                    # get L channel to for input
-            L = L[:, :, :, None]                # add 1 as channel dimention
-            L = torch.permute(L, (0,3,1,2))     # permute batch to shape (batch_szie, channels, H, W)
-            input, groudTrouth = L.to(self.device), lab.to(self.device)
-            outputs = self.model(input)
-            outputs = interpolate(outputs, scale_factor=4, mode='bilinear')
-            for image, Lchannel in zip(outputs, L):
-                predictedImages.append(np.zeros((256,256,3)))
-                for row in range(image.size()[0]):
-                    for col in range(image.size()[1]):
-                        a, b = self._class2ab(torch.argmax(image[row,col]), scaleFactor)
-                        predictedImages[-1][row,col][0] = Lchannel[0, row, col].item()
-                        predictedImages[-1][row,col][1] = a
-                        predictedImages[-1][row,col][2] = b
-                if counter > 10: #save only 10 images for comparison
-                    break
+            L = lab[:, :, :, 0]
+            L = L[:, :, :, None]
+            L = torch.permute(L, (0, 3, 1, 2))
+            input_tensor = L.to(self.device)
+            outputs = self.model(input_tensor)
+            outputs = F.interpolate(outputs, scale_factor=scale_factor, mode='bilinear', align_corners=False)
+
+            for output, Lchannel in zip(outputs, L):
+                ab = self._class2ab(output, scale_factor)
+                full_lab = torch.cat((Lchannel, ab), dim=1).cpu().numpy()
+                lab_image = self.lab2rgb(full_lab)
+                predicted_images.append(lab_image)
                 counter += 1
-        return predictedImages
+                if counter >= 10:
+                    break
+            if counter >= 10:
+                break
+
+        return predicted_images
 
     def saveImages(self, predictedImages: list):
         for imageIndex in range(len(predictedImages)):
             img = np.float32(predictedImages[imageIndex])
             img = cv2.cvtColor(img, cv2.COLOR_LAB2BGR)
             cv2.imwrite("./data/color_img" + str(imageIndex) + ".jpg", predictedImages[imageIndex])
-
-
-
