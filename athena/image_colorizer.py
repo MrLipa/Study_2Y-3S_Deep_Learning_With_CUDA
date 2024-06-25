@@ -4,7 +4,7 @@ import logging
 import torch
 from time import time
 
-project_dir = os.path.abspath('../../Study_2Y-3S_Image_Colorizator')
+project_dir = os.path.abspath('../')
 sys.path.append(project_dir)
 
 from src import utils, data, models
