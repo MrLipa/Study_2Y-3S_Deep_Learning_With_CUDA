@@ -2,6 +2,7 @@
 
 import os
 import torch
+import time
 from datetime import datetime
 from typing import Optional
 from ..utils.singleton import Singleton
@@ -19,6 +20,7 @@ class Manager(metaclass=Singleton):
 
     def train_model(self, criterion, optimizer: torch.optim.Optimizer, epochs: int) -> None:
         for epoch in range(epochs):
+            epoch_start_time = time.time()
             for lab in self.data_loader.train_lab_data_loader:
                 L = lab[:, :, :, 0]
                 L = L[:, :, :, None]
@@ -30,7 +32,8 @@ class Manager(metaclass=Singleton):
                 loss.backward()
                 optimizer.step()
                 self.logger.info(f"Epoch {epoch}, Batch loss: {loss.item()}")
-            self.logger.info(f"Epoch {epoch}, Final Loss: {loss.item()}")
+            epoch_duration = time.time() - epoch_start_time
+            self.logger.info(f"Epoch {epoch}, Final Loss: {loss.item()}, Epoch duration: {epoch_duration:.2f} seconds")
 
     def save_model(self, models_folder_path: str) -> None:
         os.makedirs(models_folder_path, exist_ok=True)
