@@ -4,7 +4,7 @@ import logging
 import torch
 from time import time
 
-project_dir = os.path.abspath('../')
+project_dir = os.path.abspath('../../Study_2Y-3S_Image_Colorizator')
 sys.path.append(project_dir)
 
 from src import utils, data, models
@@ -25,11 +25,12 @@ def main():
     split_proportions = (0.7, 0.2, 0.1)
     image_size = (256, 256)
     logger = logger
-    class_list = ['n00448232']
-    images_per_class = 100
-    multiprocessing_workers = 1
-    batch_size = 10
-    epochs = 30
+    # sumo, wrestling, professional wrestling
+    class_list = ['n00448232','n00447540', 'n00448126']
+    images_per_class = 10000
+    multiprocessing_workers = 4
+    batch_size = 32
+    epochs = 20
     numberOfBins = 16
     loss_function = utils.LossFunction(numberOfBins)
 

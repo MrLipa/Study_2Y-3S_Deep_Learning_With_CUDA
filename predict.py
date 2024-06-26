@@ -24,10 +24,9 @@ def main():
     image_size = (256, 256)
     logger = logger
     class_list = ['n00448232']
-    images_per_class = 100
+    images_per_class = 1000
     multiprocessing_workers = 5
-    batch_size = 20
-    epochs = 8
+    batch_size = 32
     numberOfBins = 16
     loss_function = utils.LossFunction(numberOfBins)
 
@@ -35,19 +34,16 @@ def main():
                          logger=logger, class_list=class_list, images_per_class=images_per_class,
                          multiprocessing_workers=multiprocessing_workers, batch_size=batch_size, loss_function=loss_function)
 
-    loader.clear_directories()
     loader.setup_paths()
-    loader.load_and_split_data()
     loader.setup_data_loaders()
 
     logger.info(f"Load data completed in {time() - start_time:.2f} seconds")
 
     model = models.Model().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     manager = models.Manager(model, loader, logger, device)
-    manager.train_model(loss_function, optimizer, epochs)
-    manager.save_model(os.path.join(project_dir, 'models'))
-
+    manager.load_model(device, model_path = "./src/models/", if_latest = True)
+    predictions = manager.predict_model(int(image_size[0]/numberOfBins))
+    manager.saveImages(predictions)
     logger.info(f"Session completed in {time() - start_time:.2f} seconds")
 
 
